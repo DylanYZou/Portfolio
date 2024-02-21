@@ -1,0 +1,118 @@
+---
+title: "Dylan Zou's Final Project"
+subtitle: "Data Visualization (STAT 302)"
+author: "Dylan Zou"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    highlight: "tango"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE, message = FALSE, warning = TRUE}
+# Load package(s)
+library(tidyverse)
+library(scales)
+library(tidyr)
+library(dplyr)
+library(readr)
+library(sf)
+library(rworldmap)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(rnaturalearthhires)
+#devtools::install_github("ropensci/rnaturalearthhires") 
+library(patchwork)
+library(tigris)
+library(ggthemes)
+library(dplyr)
+library(sf)
+library(janitor)
+library(rgeos)
+library(tibble)
+library(xlsx)
+library(reshape2)
+library(readxl)
+library(tmap)    # for static and interactive maps
+library(leaflet) # for interactive maps
+```
+
+```{r load-data, include = FALSE, message = FALSE, warning = TRUE}
+# Read in the dataset(s)
+territorial <- read_csv("data/carbon_data.csv")
+
+terra <- joinCountryData2Map(territorial, joinCode = "NAME", nameJoinColumn = "Country")
+
+world <- ne_countries(scale = "large", returnclass = "sf")
+
+territorial.map <- merge(world, terra, by.x= "admin", by.y= "Country")
+```
+
+
+## Total Carbon Emissions (in Metric Tons) by Country from 1959-2020
+
+```{r carbon-map, echo = FALSE}
+p1 <- ggplot(data = territorial.map) + 
+  geom_sf(aes(fill = Total)) +
+    scale_fill_gradient2(
+      name = NULL,
+      high = "#EE4B2B") +
+  theme(
+    plot.title = element_text(hjust = 0.5)) +
+  theme_map()
+p1
+```
+
+## Bar Plot of the Top 10 Polluting Countries from 1959-2020
+
+```{r top-10-barplot, echo = FALSE, warning = FALSE, message = FALSE}
+top10 <- territorial %>%
+  filter(Total > 6500)
+
+ggplot(data = top10) + 
+  geom_bar(stat = "identity", 
+           aes(x = reorder(Country, Total),
+               y = Total,
+               fill = Total)) +
+  labs(
+    x = NULL,
+    y = "Metric Tons of Carbon Emitted"
+  ) +
+  scale_fill_continuous(
+    high = "black",
+  ) +
+  theme(axis.text.x=element_text(angle=45, hjust=1),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position="none")
+```
+
+## Line Plot of the Top 10 Polluting Countries from 1959-2020
+
+```{r top-10-lineplot, echo = FALSE, message=FALSE, results='hide', warning = FALSE}
+line <- read_csv("data/line_graph.csv")
+
+lineplot <- melt(line, id.vars = 'Year', variable.name = 'Country')
+
+ggplot(data = lineplot) + 
+  geom_line(aes(x = Year, 
+                y = value, 
+                group = Country, 
+                color = Country)) +
+  labs(
+    x = "Year",
+    y = "Metric Tons of Carbon Emitted"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.subtitle = element_text(size = 12),
+    plot.title = element_text(size = 14, face = "bold"),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank())
+```
+
+## Citation:
+
+Pierre  Friedlingstein, Matthew W. Jones, Michael O'Sullivan, Robbie M. Andrew, Dorothee, C. E. Bakker, Judith  Hauck, Corinne  Le Quéré, Glen P. Peters, Wouter  Peters, Julia Pongratz, Stephen Sitch, Josep G. Canadell, Philippe Ciais, Rob B. Jackson, Simone R. Alin, Peter Anthoni, Nicholas R. Bates, Meike Becker, Nicolas Bellouin, Laurent Bopp, Thi Tuyet Trang Chau, Frédéric Chevallier, Louise P. Chini, Margot Cronin, Kim I. Currie, Bertrand Decharme, Laique M. Djeutchouang, Xinyu Dou, Wiley Evans, Richard A. Feely, Liang Feng, Thomas Gasser, Dennis Gilfillan, Thanos Gkritzalis, Giacomo Grassi, Luke Gregor, Nicolas Gruber, Özgür Gürses, Ian Harris, Richard A. Houghton, George C. Hurtt, Yosuke Iida, Tatiana Ilyina, Ingrid T. Luijkx, Atul Jain, Steve D. Jones, Etsushi Kato, Daniel Kennedy, Kees Klein Goldewijk, Jürgen Knauer, Jan Ivar Korsbakken, Arne Körtzinger, Peter Landschützer, Siv K. Lauvset, Nathalie Lefèvre, Sebastian Lienert, Junjie Liu, Gregg Marland, Patrick C. McGuire, Joe R. Melton, David R. Munro, Julia E.M.S Nabel Shin-Ichiro Nakaoka, Yosuke Niwa, Tsuneo Ono, Denis Pierrot, Benjamin Poulter, Gregor Rehder, Laure Resplandy, Eddy Robertson, Christian Rödenbeck, Thais M Rosan, Jörg Schwinger, Clemens Schwingshackl, Roland Séférian, Adrienne J. Sutton, Colm Sweeney, Toste Tanhua, Pieter P Tans, Hanqin Tian, Bronte Tilbrook, Francesco Tubiello, Guido van der Werf, Nicolas Vuichard, Chisato Wada Rik Wanninkhof, Andrew J. Watson, David Willis, Andrew J. Wiltshire, Wenping Yuan, Chao Yue, Xu Yue, Sönke Zaehle, Jiye Zeng. Global Carbon Budget 2021, Earth Syst. Sci. Data, 2021. https://doi.org/10.5194/essd-2021-386
